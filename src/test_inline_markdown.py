@@ -1,9 +1,9 @@
 import unittest
 
 from inline_markdown import (extract_markdown_images, extract_markdown_links,
-                             split_nodes_delimiter)
+                             split_nodes_delimiter, split_nodes_image, split_nodes_link)
 from textnode import (TextNode, text_type_bold, text_type_code,
-                      text_type_italic, text_type_text)
+                      text_type_italic, text_type_text, text_type_image, text_type_link)
 
 
 class TestInlineMarkdown(unittest.TestCase):
@@ -72,6 +72,103 @@ class TestInlineMarkdown(unittest.TestCase):
             ],
             new_nodes,
         )
+
+    def test_delim_images(self):
+        no_images = TextNode("There are no images in this text", text_type_text)
+        no_images_answer = split_nodes_image([no_images])
+        self.assertEqual(
+            [
+                TextNode("There are no images in this text", text_type_text)
+            ],
+            no_images_answer
+        )
+
+        node = TextNode(
+            "This is text with an ![image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png) and another ![second image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/3elNhQu.png)",
+            text_type_text,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertEqual(
+            [
+                TextNode("This is text with an ", text_type_text),
+                TextNode("image", text_type_image, "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png"),
+                TextNode(" and another ", text_type_text),
+                TextNode(
+                    "second image", text_type_image, "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/3elNhQu.png"
+                ),
+            ],
+            new_nodes,
+        )
+
+        node_with_extra_content = TextNode(
+            "This is text with an ![image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png) and another ![second image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/3elNhQu.png). Isn't this awesome!",
+            text_type_text,
+        )
+
+        new_nodes_extra = split_nodes_image([node_with_extra_content])
+        self.assertEqual(
+            [
+                TextNode("This is text with an ", text_type_text),
+                TextNode("image", text_type_image, "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png"),
+                TextNode(" and another ", text_type_text),
+                TextNode(
+                    "second image", text_type_image, "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/3elNhQu.png"
+                ),
+                TextNode(". Isn't this awesome!", text_type_text),
+            ],
+            new_nodes_extra,
+        )
+
+        node_image_first = TextNode(
+            "![image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png) and another ![second image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/3elNhQu.png). Isn't this awesome!",
+            text_type_text
+        )
+        new_node_image_first = split_nodes_image([node_image_first])
+        self.assertEqual(
+            [
+                TextNode("image", text_type_image, "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png"),
+                TextNode(" and another ", text_type_text),
+                TextNode(
+                    "second image", text_type_image, "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/3elNhQu.png"
+                ),
+                TextNode(". Isn't this awesome!", text_type_text),
+            ],
+            new_node_image_first,
+        )
+
+    def test_delim_links(self):
+        node = TextNode(
+            "This is a website with [Google](https://www.google.com) and another [Games Database](https://games.linuxhg.com)",
+            text_type_text,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertEqual(
+            [
+                TextNode("This is a website with ", text_type_text),
+                TextNode("Google", text_type_link, "https://www.google.com"),
+                TextNode(" and another ", text_type_text),
+                TextNode("Games Database", text_type_link, "https://games.linuxhg.com"),
+            ],
+            new_nodes,
+        )
+
+        node_with_extra_content = TextNode(
+            "This is a website with [Google](https://www.google.com) and another [Games Database](https://games.linuxhg.com). Isn't this awesome!",
+            text_type_text,
+        )
+
+        new_nodes_extra = split_nodes_link([node_with_extra_content])
+        self.assertEqual(
+            [
+                TextNode("This is a website with ", text_type_text),
+                TextNode("Google", text_type_link, "https://www.google.com"),
+                TextNode(" and another ", text_type_text),
+                TextNode("Games Database", text_type_link, "https://games.linuxhg.com"),
+                TextNode(". Isn't this awesome!", text_type_text),
+            ],
+            new_nodes_extra,
+        )
+
 
 
 def test_extract_markdown_images(self):
