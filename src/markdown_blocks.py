@@ -1,6 +1,8 @@
 import re
 
 from htmlnode import LeafNode, ParentNode
+from inline_markdown import text_to_textnodes
+from textnode import text_node_to_html_node
 
 block_type_paragraph = "paragraph"
 block_type_heading = "heading"
@@ -60,14 +62,28 @@ def block_to_block_type(block):
     else:
         return block_type_paragraph
     
+def text_to_children(text):
+    text_nodes = text_to_textnodes(text)
+    children = []
+    for text_node in text_nodes:
+        html_node = text_node_to_html_node(text_node)
+        children.append(html_node)
+    return children
+    
 def paragraph_to_html_node(block):
-    return LeafNode("p", block)
+    lines = block.split("\n")
+    paragraph = " ".join(lines)
+    children = text_to_children(paragraph)
+    return ParentNode("p", children)
 
 def heading_to_html_node(block):
     regexed_block = re.search("(^#{1,6}) (.*)", block)
-    count = len(regexed_block.groups(1))
-    data = regexed_block.groups(2)
-    return LeafNode(f"h{count}", data)
+    if regexed_block == None:
+        raise ValueError("Invalid heading level")
+    count = len(regexed_block.groups()[0])
+    data = regexed_block.groups()[1]
+    data = text_to_children(data)
+    return ParentNode(f"h{count}", data)
 
 def code_to_html_node(block):
     code_data = re.search("^```(.*)```$", block).groups(1)[0]
@@ -125,5 +141,5 @@ def markdown_to_html_node(markdown):
     return ParentNode("div", nodes)
 
 
-quote_block = "> quote first line\n> quote second line"
-print(quote_to_html_node(quote_block))
+quote_block = "### This is a h3 heading."
+print(heading_to_html_node(quote_block))
